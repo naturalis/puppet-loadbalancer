@@ -4,7 +4,7 @@
 #
 #
 #
-class loadbalancer::lb (
+class loadbalancer (
 
 
 # cert_array makes use of letsencryptssl::installcert class
