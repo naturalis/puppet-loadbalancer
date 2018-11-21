@@ -29,9 +29,37 @@ class loadbalancer (
                                                     'server' => 'site1',
                                                     'proxy' => 'https://site1'},
                      },
-  Hash $upstream    = { 'site1'               => { 'members' => ['172.16.1.1'] },
-                        'default_server'      => { 'members' => ['172.16.1.2'] },
+  Hash $streamhost = {'stream1'        => {  'ensure'                 => 'present',
+                                             'listen_port'            => 8443,
+                                             'listen_options'         => 'tcp',
+                                             'proxy'                  => 'stream1',
+                                             'proxy_read_timeout'     => '1',
+                                             'proxy_connect_timeout'  => '1'
+                                           }
                       },
+  Hash $upstream    = { 'site1'          => { 'members' => {
+                                                '172.16.1.1:80' => {
+                                                   'server' => '172.16.1.1',
+                                                   'port'   => 80,
+                                                 },
+                                              },
+                                            },
+                         'stream1'        => {'upstream_context' => 'stream',
+                                              'members' => {
+                                                '172.16.1.1:8443' => {
+                                                   'server' => '172.16.1.1',
+                                                   'port'   => 80,
+                                                 },
+                                              },
+                                            },
+                         'default_server' => { 'members' => {
+                                                'default_server:80' => {
+                                                   'server' => '172.16.1.2',
+                                                   'port'   => 80,
+                                                 }
+                                              },
+                                            },
+                      }
 
 ){
 
@@ -42,13 +70,14 @@ class loadbalancer (
 
 
   class { 'nginx':
-    names_hash_bucket_size => '512',
+    names_hash_bucket_size => 512,
     client_max_body_size   => '100M'
   }
 
 #  create_resources
   create_resources(nginx::resource::server,$server,{})
   create_resources(nginx::resource::location,$location,{})
+  create_resources(nginx::resource::streamhost,$streamhost,{})
   create_resources(nginx::resource::upstream,$upstream,{})
 }
 
